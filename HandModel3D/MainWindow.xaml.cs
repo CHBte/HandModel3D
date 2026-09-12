@@ -34,6 +34,7 @@ namespace HandModel3D
         public MainWindow()
         {
             InitializeComponent();
+            Title = VersionInfo.WindowTitle; // <2600912_5-1>
             BuildLengthSliders();
             BuildSwatches();
             BuildJointPanels();

@@ -17,7 +17,7 @@ namespace HandModel3D
             Background = new SolidColorBrush(Color.FromRgb(0xF1, 0xF3, 0xF5));
             FontFamily = new FontFamily("Malgun Gothic, Segoe UI");
 
-            string ver = AsmMeta("DisplayVersion") ?? "0.1.0";
+            string ver = VersionInfo.Version4;
             string build = AsmMeta("BuildTimestamp") ?? "-";
 
             var subInk = new SolidColorBrush(Color.FromRgb(0x49, 0x50, 0x57));
