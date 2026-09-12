@@ -1,0 +1,2 @@
+Left: joints=20 segs=15 X[-14.8..-5.1] Y[-1.9..18.5] tips=5
+Right: joints=20 segs=15 X[0.4..10.1] Y[-1.9..18.5] tips=5

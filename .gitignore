@@ -1,0 +1,14 @@
+# Visual Studio / .NET build artifacts
+[Bb]in/
+[Oo]bj/
+[Dd]ebug/
+[Rr]elease/
+.vs/
+*.user
+*.suo
+
+# build.bat 산출물 (재현 가능, 소스 아님)
+/build/
+
+# update-hands.ps1 파이프라인의 중간 산출물(①추출 단계에서 매번 지우고 다시 만듦)
+/tools/svg-out/

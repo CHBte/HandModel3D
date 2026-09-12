@@ -1,0 +1,59 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <TargetFramework>net10.0-windows10.0.19041.0</TargetFramework>
+    <UseWPF>true</UseWPF>
+    <RootNamespace>HandModel3D</RootNamespace>
+    <AssemblyName>HandModel3D</AssemblyName>
+    <ImplicitUsings>disable</ImplicitUsings>
+    <Nullable>disable</Nullable>
+    <LangVersion>latest</LangVersion>
+    <AssemblyTitle>손 모델 3D(Hand Model 3D)</AssemblyTitle>
+    <Product>Hand Model 3D</Product>
+    <!-- <2600912_5>: 메이저 자리는 0 고정, 사용자가 직접 지시하기 전까지 1로 올리지 않는다.
+         Minor.Build.Revision은 Claude가 자동으로 올린다. -->
+    <AssemblyVersion>0.1.0.0</AssemblyVersion>
+    <FileVersion>0.1.0.0</FileVersion>
+    <DisplayVersion>0.1.0</DisplayVersion>
+    <ApplicationManifest>app.manifest</ApplicationManifest>
+  </PropertyGroup>
+
+  <!-- 빌드 시각을 어셈블리 메타데이터에 주입한다. '정보' 창이 읽어 표시한다.
+       (OpenTypingPlus 의 같은 기법을 재사용.) -->
+  <Target Name="SetBuildTimestamp" BeforeTargets="GetAssemblyAttributes">
+    <PropertyGroup>
+      <BuildTimestamp>$([System.DateTime]::Now.ToString("yyyy-MM-dd HH:mm"))</BuildTimestamp>
+    </PropertyGroup>
+    <ItemGroup>
+      <AssemblyAttribute Include="System.Reflection.AssemblyMetadataAttribute">
+        <_Parameter1>BuildTimestamp</_Parameter1>
+        <_Parameter2>$(BuildTimestamp)</_Parameter2>
+      </AssemblyAttribute>
+      <AssemblyAttribute Include="System.Reflection.AssemblyMetadataAttribute">
+        <_Parameter1>DisplayVersion</_Parameter1>
+        <_Parameter2>$(DisplayVersion)</_Parameter2>
+      </AssemblyAttribute>
+    </ItemGroup>
+  </Target>
+
+  <!-- 물리 키 마스터 표를 출력 폴더로 복사(캡처 파일명 [행-열] 매핑에 사용). -->
+  <ItemGroup>
+    <None Include="..\physical-key-master.json" Link="physical-key-master.json">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+  </ItemGroup>
+
+  <!-- <260811_32> '도움말' 창이 보여 주는 사용법 문서. 실행 파일 안에 넣어 두므로 배포본만 있으면
+       따로 파일을 들고 다니지 않아도 되고, '출력' 버튼으로 언제든 다시 꺼낼 수 있다. -->
+  <ItemGroup>
+    <EmbeddedResource Include="Resources\사용법.md" LogicalName="HandModel3D.사용법.md" />
+  </ItemGroup>
+
+  <!-- <260811_19> 배경 키보드 글자를 원본(OpenTypingPlus)과 같은 나눔바른고딕으로 그린다.
+       글꼴은 SIL Open Font License 1.1 (네이버 나눔글꼴) — 재배포 가능. -->
+  <ItemGroup>
+    <Resource Include="Resources\Fonts\NanumBarunGothic.ttf" />
+  </ItemGroup>
+
+</Project>

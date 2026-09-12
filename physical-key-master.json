@@ -1,0 +1,103 @@
+{
+  "meta": {
+    "title": "물리 키 기준 마스터 표 (Physical-key master table)",
+    "purpose": "3D 손 모양 모델링 → 2D 윤곽선 추출 → OpenTypingPlus 손가락 레이어 그림 제작을 위한 입력 자료. 이 파일은 3D 도구/파이프라인의 입력이며 OpenTypingPlus 소스에는 포함되지 않는다.",
+    "coordinateSystem": "keyPos = [row, col] — OpenTyping 의 KeyPos 좌표계와 동일. row: 0=숫자열, 1=윗줄(QWERTY q줄), 2=중간(홈)줄, 3=아랫줄. col: 각 줄 왼쪽부터 0-based.",
+    "rowKeyCounts": [13, 13, 11, 10],
+    "sameKeyAcrossLayouts": "한 keyPos 가 곧 '같은 물리 키'다. 예) keyPos [1,0] 은 두벌식에선 ㅂ/ㅃ, QWERTY에선 q/Q 로 같은 물리 키다. 이 동일성이 이 표의 join key 이며, 손 모양 그림 1장이 두 배열(및 base/shift)에 공유된다.",
+    "keysym": "base = 기본 입력, shift = Shift 를 누른 입력. dubeolsik.shift 가 \"\"(빈 문자열)이면 Shift로 달라지는 글자가 없음(같은 자모 입력). 숫자열과 기호키는 두벌식과 QWERTY가 동일하다.",
+    "fingerCodes": {
+      "L1": "왼손 소지",
+      "L2": "왼손 약지",
+      "L3": "왼손 중지",
+      "L4": "왼손 검지",
+      "L5": "왼손 엄지",
+      "R6": "오른손 엄지",
+      "R7": "오른손 검지",
+      "R8": "오른손 중지",
+      "R9": "오른손 약지",
+      "R0": "오른손 소지"
+    },
+    "finger": "각 물리 키를 누르는 주 손가락. 표기는 <260719_5>/<260719_5-1> 프로젝트 표준(L1~L5, R6~R0)만 쓴다. 채팅용 별칭은 <260719_5-2>에 따라 이 파일에 기록하지 않는다. hand/finger 는 보통 문자열 하나지만, Space 처럼 두 손가락이 함께 담당하는 키는 배열([\"left\",\"right\"] / [\"L5\",\"R6\"])로 표기한다. null 인 항목은 아직 지시받지 않아 미정이며, 임의로 추측해 채우지 않는다.",
+    "outputBaseName": "물리 키 식별자 \"row-col\"(확장자 제외). captureFilenameContract 의 [row-col] 접두어로 쓰이며, OpenTypingPlus 는 이 접두어를 파싱해 목표 KeyPos 를 찾는다. 예: keyPos [1,3] -> \"1-3\".",
+    "captureFilenameContract": {
+      "description": "손 모델 3D 프로그램이 내보내는 손 그림 캡처 파일명 계약(<260719_8> (3-10-3-1)). 이전 계약('파일명 = 행-열 정확일치, 예 1-0.png')을 이 형식으로 대체한다(2026-07-19 갱신).",
+      "format": "[row-col]_[키라벨]_YYYY-MM-DD_HHMMSS — 같은 초에 여러 번 캡처하면 끝에 _1, _2 … 접미사가 붙는다.",
+      "example": "두벌식 [ㄱ](keyPos [1,3]) 키가 눌린 캡처를 2026-07-19 19:19:59 에 저장 -> \"[1-3]_[ㄱ]_2026-07-19_191959\"",
+      "shiftExample": "[Shift]+[ㄱ] 조합이면 라벨이 조합 결과가 된다 -> \"[1-3]_[ㄲ]_2026-07-19_191959\". 같은 물리 키(1-3)의 base/shift 캡처를 라벨로 구분한다.",
+      "labelNormalization": "라벨에 파일명 금지 문자(/ ? * \\ 등)가 오면 fingersampleFilenameNormalization 과 같은 전각 규칙(0xFEE0 offset)으로 대체한다.",
+      "parsing": "OpenTypingPlus 는 '[row-col]' 접두어로 KeyPos 를, '[키라벨]' 로 base/shift 를 식별한다.",
+      "confirmedGraphicSelection": "한 키에 타임스탬프가 다른 캡처가 여러 개일 때, 앱이 FingerLayer 로 쓸 '확정본'은 사용자가 수동으로 선택한다(자동 선택 규칙 없음, 2026-07-19)."
+    },
+    "fingersampleFilenameNormalization": {
+      "description": "fingersample 폴더의 파일명은 'left/right' 로 손을, '[키심]' 으로 물리 키를 나타낸다(<260719_6>). 파일명에 못 쓰는 기호(/ ? * \\ 등)는 전각(fullwidth) 문자로 대체돼 있으므로, 이 표의 ASCII keysym 과 대조하려면 먼저 정규화해야 한다(<260719_6-2>).",
+      "rule": "문자 코드가 U+FF01..U+FF5E 범위(전각 영숫자/기호 블록)면 0xFEE0 을 빼서 대응 ASCII(U+0021..U+007E)로 바꾼다.",
+      "examples": [
+        { "fullwidth": "／", "ascii": "/" },
+        { "fullwidth": "？", "ascii": "?" },
+        { "fullwidth": "＊", "ascii": "*" },
+        { "fullwidth": "＼", "ascii": "\\" }
+      ],
+      "verified": "이 규칙으로 fingersample 1,474개 파일(_불필요 제외)을 keys[].qwerty/dubeolsik 의 base/shift 와 대조 — 정규화 후 53개 파일이 추가로 매칭됐고 손(left/right) 모순은 0건이었다."
+    }
+  },
+
+  "keys": [
+    { "keyPos": [0, 0],  "outputBaseName": "0-0",  "hand": "left",  "finger": "L1", "qwerty": { "base": "`", "shift": "~" }, "dubeolsik": { "base": "`", "shift": "~" } },
+    { "keyPos": [0, 1],  "outputBaseName": "0-1",  "hand": "left",  "finger": "L1", "qwerty": { "base": "1", "shift": "!" }, "dubeolsik": { "base": "1", "shift": "!" } },
+    { "keyPos": [0, 2],  "outputBaseName": "0-2",  "hand": "left",  "finger": "L2", "qwerty": { "base": "2", "shift": "@" }, "dubeolsik": { "base": "2", "shift": "@" } },
+    { "keyPos": [0, 3],  "outputBaseName": "0-3",  "hand": "left",  "finger": "L3", "qwerty": { "base": "3", "shift": "#" }, "dubeolsik": { "base": "3", "shift": "#" } },
+    { "keyPos": [0, 4],  "outputBaseName": "0-4",  "hand": "left",  "finger": "L4", "qwerty": { "base": "4", "shift": "$" }, "dubeolsik": { "base": "4", "shift": "$" } },
+    { "keyPos": [0, 5],  "outputBaseName": "0-5",  "hand": "left",  "finger": "L4", "qwerty": { "base": "5", "shift": "%" }, "dubeolsik": { "base": "5", "shift": "%" } },
+    { "keyPos": [0, 6],  "outputBaseName": "0-6",  "hand": "right", "finger": "R7", "qwerty": { "base": "6", "shift": "^" }, "dubeolsik": { "base": "6", "shift": "^" } },
+    { "keyPos": [0, 7],  "outputBaseName": "0-7",  "hand": "right", "finger": "R7", "qwerty": { "base": "7", "shift": "&" }, "dubeolsik": { "base": "7", "shift": "&" } },
+    { "keyPos": [0, 8],  "outputBaseName": "0-8",  "hand": "right", "finger": "R8", "qwerty": { "base": "8", "shift": "*" }, "dubeolsik": { "base": "8", "shift": "*" } },
+    { "keyPos": [0, 9],  "outputBaseName": "0-9",  "hand": "right", "finger": "R9", "qwerty": { "base": "9", "shift": "(" }, "dubeolsik": { "base": "9", "shift": "(" } },
+    { "keyPos": [0, 10], "outputBaseName": "0-10", "hand": "right", "finger": "R0", "qwerty": { "base": "0", "shift": ")" }, "dubeolsik": { "base": "0", "shift": ")" } },
+    { "keyPos": [0, 11], "outputBaseName": "0-11", "hand": "right", "finger": "R0", "qwerty": { "base": "-", "shift": "_" }, "dubeolsik": { "base": "-", "shift": "_" } },
+    { "keyPos": [0, 12], "outputBaseName": "0-12", "hand": "right", "finger": "R0", "qwerty": { "base": "=", "shift": "+" }, "dubeolsik": { "base": "=", "shift": "+" } },
+
+    { "keyPos": [1, 0],  "outputBaseName": "1-0",  "hand": "left",  "finger": "L1", "qwerty": { "base": "q", "shift": "Q" }, "dubeolsik": { "base": "ㅂ", "shift": "ㅃ" } },
+    { "keyPos": [1, 1],  "outputBaseName": "1-1",  "hand": "left",  "finger": "L2", "qwerty": { "base": "w", "shift": "W" }, "dubeolsik": { "base": "ㅈ", "shift": "ㅉ" } },
+    { "keyPos": [1, 2],  "outputBaseName": "1-2",  "hand": "left",  "finger": "L3", "qwerty": { "base": "e", "shift": "E" }, "dubeolsik": { "base": "ㄷ", "shift": "ㄸ" } },
+    { "keyPos": [1, 3],  "outputBaseName": "1-3",  "hand": "left",  "finger": "L4", "qwerty": { "base": "r", "shift": "R" }, "dubeolsik": { "base": "ㄱ", "shift": "ㄲ" } },
+    { "keyPos": [1, 4],  "outputBaseName": "1-4",  "hand": "left",  "finger": "L4", "qwerty": { "base": "t", "shift": "T" }, "dubeolsik": { "base": "ㅅ", "shift": "ㅆ" } },
+    { "keyPos": [1, 5],  "outputBaseName": "1-5",  "hand": "right", "finger": "R7", "qwerty": { "base": "y", "shift": "Y" }, "dubeolsik": { "base": "ㅛ", "shift": "" } },
+    { "keyPos": [1, 6],  "outputBaseName": "1-6",  "hand": "right", "finger": "R7", "qwerty": { "base": "u", "shift": "U" }, "dubeolsik": { "base": "ㅕ", "shift": "" } },
+    { "keyPos": [1, 7],  "outputBaseName": "1-7",  "hand": "right", "finger": "R8", "qwerty": { "base": "i", "shift": "I" }, "dubeolsik": { "base": "ㅑ", "shift": "" } },
+    { "keyPos": [1, 8],  "outputBaseName": "1-8",  "hand": "right", "finger": "R9", "qwerty": { "base": "o", "shift": "O" }, "dubeolsik": { "base": "ㅐ", "shift": "ㅒ" } },
+    { "keyPos": [1, 9],  "outputBaseName": "1-9",  "hand": "right", "finger": "R0", "qwerty": { "base": "p", "shift": "P" }, "dubeolsik": { "base": "ㅔ", "shift": "ㅖ" } },
+    { "keyPos": [1, 10], "outputBaseName": "1-10", "hand": "right", "finger": "R0", "qwerty": { "base": "[", "shift": "{" }, "dubeolsik": { "base": "[", "shift": "{" } },
+    { "keyPos": [1, 11], "outputBaseName": "1-11", "hand": "right", "finger": "R0", "qwerty": { "base": "]", "shift": "}" }, "dubeolsik": { "base": "]", "shift": "}" } },
+    { "keyPos": [1, 12], "outputBaseName": "1-12", "hand": null, "finger": null, "qwerty": { "base": "⧵", "shift": "|" }, "dubeolsik": { "base": "⧵", "shift": "|" } },
+
+    { "keyPos": [2, 0],  "outputBaseName": "2-0",  "hand": "left",  "finger": "L1", "qwerty": { "base": "a", "shift": "A" }, "dubeolsik": { "base": "ㅁ", "shift": "" } },
+    { "keyPos": [2, 1],  "outputBaseName": "2-1",  "hand": "left",  "finger": "L2", "qwerty": { "base": "s", "shift": "S" }, "dubeolsik": { "base": "ㄴ", "shift": "" } },
+    { "keyPos": [2, 2],  "outputBaseName": "2-2",  "hand": "left",  "finger": "L3", "qwerty": { "base": "d", "shift": "D" }, "dubeolsik": { "base": "ㅇ", "shift": "" } },
+    { "keyPos": [2, 3],  "outputBaseName": "2-3",  "hand": "left",  "finger": "L4", "qwerty": { "base": "f", "shift": "F" }, "dubeolsik": { "base": "ㄹ", "shift": "" } },
+    { "keyPos": [2, 4],  "outputBaseName": "2-4",  "hand": "left",  "finger": "L4", "qwerty": { "base": "g", "shift": "G" }, "dubeolsik": { "base": "ㅎ", "shift": "" } },
+    { "keyPos": [2, 5],  "outputBaseName": "2-5",  "hand": "right", "finger": "R7", "qwerty": { "base": "h", "shift": "H" }, "dubeolsik": { "base": "ㅗ", "shift": "" } },
+    { "keyPos": [2, 6],  "outputBaseName": "2-6",  "hand": "right", "finger": "R7", "qwerty": { "base": "j", "shift": "J" }, "dubeolsik": { "base": "ㅓ", "shift": "" } },
+    { "keyPos": [2, 7],  "outputBaseName": "2-7",  "hand": "right", "finger": "R8", "qwerty": { "base": "k", "shift": "K" }, "dubeolsik": { "base": "ㅏ", "shift": "" } },
+    { "keyPos": [2, 8],  "outputBaseName": "2-8",  "hand": "right", "finger": "R9", "qwerty": { "base": "l", "shift": "L" }, "dubeolsik": { "base": "ㅣ", "shift": "" } },
+    { "keyPos": [2, 9],  "outputBaseName": "2-9",  "hand": "right", "finger": "R0", "qwerty": { "base": ";", "shift": ":" }, "dubeolsik": { "base": ";", "shift": ":" } },
+    { "keyPos": [2, 10], "outputBaseName": "2-10", "hand": "right", "finger": "R0", "qwerty": { "base": "'", "shift": "\"" }, "dubeolsik": { "base": "'", "shift": "\"" } },
+
+    { "keyPos": [3, 0],  "outputBaseName": "3-0",  "hand": "left",  "finger": "L1", "qwerty": { "base": "z", "shift": "Z" }, "dubeolsik": { "base": "ㅋ", "shift": "" } },
+    { "keyPos": [3, 1],  "outputBaseName": "3-1",  "hand": "left",  "finger": "L2", "qwerty": { "base": "x", "shift": "X" }, "dubeolsik": { "base": "ㅌ", "shift": "" } },
+    { "keyPos": [3, 2],  "outputBaseName": "3-2",  "hand": "left",  "finger": "L3", "qwerty": { "base": "c", "shift": "C" }, "dubeolsik": { "base": "ㅊ", "shift": "" } },
+    { "keyPos": [3, 3],  "outputBaseName": "3-3",  "hand": "left",  "finger": "L4", "qwerty": { "base": "v", "shift": "V" }, "dubeolsik": { "base": "ㅍ", "shift": "" } },
+    { "keyPos": [3, 4],  "outputBaseName": "3-4",  "hand": "left",  "finger": "L4", "qwerty": { "base": "b", "shift": "B" }, "dubeolsik": { "base": "ㅠ", "shift": "" } },
+    { "keyPos": [3, 5],  "outputBaseName": "3-5",  "hand": "right", "finger": "R7", "qwerty": { "base": "n", "shift": "N" }, "dubeolsik": { "base": "ㅜ", "shift": "" } },
+    { "keyPos": [3, 6],  "outputBaseName": "3-6",  "hand": "right", "finger": "R7", "qwerty": { "base": "m", "shift": "M" }, "dubeolsik": { "base": "ㅡ", "shift": "" } },
+    { "keyPos": [3, 7],  "outputBaseName": "3-7",  "hand": "right", "finger": "R8", "qwerty": { "base": ",", "shift": "<" }, "dubeolsik": { "base": ",", "shift": "<" } },
+    { "keyPos": [3, 8],  "outputBaseName": "3-8",  "hand": "right", "finger": "R9", "qwerty": { "base": ".", "shift": ">" }, "dubeolsik": { "base": ".", "shift": ">" } },
+    { "keyPos": [3, 9],  "outputBaseName": "3-9",  "hand": "right", "finger": "R0", "qwerty": { "base": "/", "shift": "?" }, "dubeolsik": { "base": "/", "shift": "?" } }
+  ],
+
+  "modifiers": [
+    { "name": "Space",       "outputBaseName": "mod-space",  "hand": ["left", "right"], "finger": ["L5", "R6"], "note": "왼손 엄지(L5)와 오른손 엄지(R6) 둘 다로 누른다." },
+    { "name": "LeftShift",   "outputBaseName": "mod-lshift", "hand": "left",  "finger": "L1", "note": "오른손 영역 글자의 대문자/윗글쇠 입력 시 왼손 소지로 누름." },
+    { "name": "RightShift",  "outputBaseName": "mod-rshift", "hand": "right", "finger": "R0", "note": "왼손 영역 글자의 대문자/윗글쇠 입력 시 오른손 소지로 누름." }
+  ]
+}

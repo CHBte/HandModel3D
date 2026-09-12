@@ -1,0 +1,42 @@
+손 모델 3D (Hand Model 3D)
+==========================
+
+이 소프트웨어의 원본 저작물(3D 손 모델링·IK·렌더링 등 제작자가 직접 작성한 모든 코드)은
+CC0 1.0 Universal(퍼블릭 도메인 헌정)에 따라 퍼블릭 도메인으로 헌정됩니다.
+누구나 자유롭게 복제·변형·배포·상업적 이용을 할 수 있으며, 출처 표시 의무도 없습니다.
+
+To the extent possible under law, the author(s) have dedicated all copyright and
+related and neighboring rights to this software to the public domain worldwide.
+This software is distributed without any warranty.
+
+CC0 1.0 전문(정본): https://creativecommons.org/publicdomain/zero/1.0/legalcode
+
+
+키보드 배경 그림에 관한 고지 (예외 / Exception)
+-----------------------------------------------
+
+이 프로그램의 '배경 키보드' 렌더링은 OpenTyping 의 KeyBox 디자인을 참고·변형한 것입니다.
+이 부분에 대해서는 아래 OpenTyping 의 MIT 라이선스 저작권 고지를 유지합니다.
+
+The "background keyboard" rendering in this program adapts the KeyBox design of
+OpenTyping. For that portion, the following MIT copyright notice is retained.
+
+OpenTyping — Copyright (c) 2018 Gear
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
