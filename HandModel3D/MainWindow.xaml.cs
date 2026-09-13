@@ -479,7 +479,12 @@ namespace HandModel3D
             try
             {
                 AppSettings.UseSingleDir(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData));
-                _camera.PanY = -GraphicsHost.ActualHeight * DpiScale * 0.30;   // 손을 위로 밀어 손목쪽이 아래 밖으로
+                // qksqhr(2026-09-13): 부호 오류 수정 — PanY 는 화면 좌표(Y 아래로 증가)에 그대로
+                // 더해지므로 음수를 주면 손이 위로 밀려 오히려 기본 프레이밍에서 이미 잘려 있던
+                // 손목쪽이 화면 안으로 들어와 버렸다(touchesEdge 가 항상 False 로 나와 이 검증이
+                // 실제로는 아무것도 테스트하지 못하고 있었음 — 실행·캡처로 확인). 손목쪽을 아래
+                // 밖으로 더 밀어내려면 양수를 줘야 한다.
+                _camera.PanY = GraphicsHost.ActualHeight * DpiScale * 0.30;   // 손을 아래로 밀어 손목쪽이 아래 밖으로
                 RenderScene();
                 sb.AppendLine($"touchesEdge={HandTouchesEdge()}");
                 string p1 = CaptureBitmapCore(false);
@@ -2895,6 +2900,29 @@ namespace HandModel3D
             LoadBgImage(dlg.FileName);
         }
 
+        /// <summary>
+        /// qksqhr(2026-09-13) 보안: path 가 UNC(\\서버\공유\...) 등 네트워크 경로가 아닌 로컬 파일
+        /// 경로인지 확인한다. 저장 파일에서 불러온 BgImagePath 처럼 신뢰할 수 없는 경로를
+        /// File.Exists/이미지 로드에 넘기기 전 걸러내는 용도(사용자가 대화상자로 직접 고른
+        /// 경로는 이 검사를 거치지 않는다 — 본인이 의도한 선택이므로).
+        /// qksqhr(2026-09-13) 후속: Uri 기반 판정은 Win32 확장 길이 경로(\\?\C:\...)를 UNC와
+        /// 구분하지 못해 정상적인 로컬 경로까지 거부했다(code-review 지적, 재현 확인) — 문자열
+        /// 규칙으로 다시 짰다: \\?\ · \\.\ 접두어는 벗겨서 판정하되, 그 뒤가 "UNC\"면(확장형
+        /// UNC 표기) 네트워크 경로로 계속 거부한다.
+        /// </summary>
+        private static bool IsLocalFilePath(string path)
+        {
+            if (string.IsNullOrWhiteSpace(path)) return false;
+            string p = path;
+            if (p.StartsWith(@"\\?\", StringComparison.Ordinal) || p.StartsWith(@"\\.\", StringComparison.Ordinal))
+                p = p.Substring(4);
+            if (p.StartsWith(@"UNC\", StringComparison.OrdinalIgnoreCase)) return false;
+            if (p.StartsWith(@"\\", StringComparison.Ordinal) || p.StartsWith("//", StringComparison.Ordinal))
+                return false;
+            // 남은 형태는 "C:\..." 처럼 드라이브 문자로 시작하는 로컬 경로여야 한다.
+            return p.Length >= 3 && char.IsLetter(p[0]) && p[1] == ':' && (p[2] == '\\' || p[2] == '/');
+        }
+
         private void LoadBgImage(string path)
         {
             try
@@ -3430,7 +3458,11 @@ namespace HandModel3D
             CapRight.IsChecked = _capTarget == CaptureTarget.Right;
             BitmapCamBtn.IsEnabled = _capTarget == CaptureTarget.Both;
             // <260719_10> 배경 이미지
-            if (!string.IsNullOrEmpty(m.BgImagePath) && System.IO.File.Exists(m.BgImagePath))
+            // qksqhr(2026-09-13) 보안: BgImagePath 는 신뢰 못 할 입력이다(남이 만든 손 모양 json을
+            // 열 수 있음). UNC 경로(\\서버\공유\...)를 그대로 File.Exists 에 넘기면 존재 확인
+            // 시도만으로 OS가 그 서버로 SMB 연결·NTLM 인증을 시도해 자격 증명이 유출될 수 있다
+            // (알려진 UNC 경로 공격 패턴). 로컬 파일 경로만 허용한다.
+            if (!string.IsNullOrEmpty(m.BgImagePath) && IsLocalFilePath(m.BgImagePath) && System.IO.File.Exists(m.BgImagePath))
             {
                 LoadBgImage(m.BgImagePath);
                 if (m.BgWidth > 0) BgImage.Width = m.BgWidth;
