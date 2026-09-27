@@ -11,10 +11,10 @@
     <LangVersion>latest</LangVersion>
     <AssemblyTitle>손 모델 3D(Hand Model 3D)</AssemblyTitle>
     <Product>Hand Model 3D</Product>
-    <!-- <2600912_5>: 메이저 자리는 0 고정, 사용자가 직접 지시하기 전까지 1로 올리지 않는다.
-         Minor.Build.Revision은 Claude가 자동으로 올린다. -->
-    <AssemblyVersion>0.1.0.0</AssemblyVersion>
-    <FileVersion>0.1.0.0</FileVersion>
+    <!-- <2600912_5>: 메이저 자리는 사용자가 직접 지시하기 전까지 올리지 않는다.
+         <260927_16>로 1.0.0.0(첫 정식 릴리스)까지 올림. 이후 Minor.Build.Revision은 Claude가 자동으로 올린다. -->
+    <AssemblyVersion>1.0.0.0</AssemblyVersion>
+    <FileVersion>1.0.0.0</FileVersion>
     <ApplicationManifest>app.manifest</ApplicationManifest>
   </PropertyGroup>
 
