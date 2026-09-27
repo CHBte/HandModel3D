@@ -25,7 +25,7 @@
 ![산성비 타자 오락](images/05_result.png)
 
 
-<img title="" src="images/06_result.png"" width="109">
+(images/06_result.png)
 
 ※주의: 열린타자+(Open Typing Plus)에 손 그림을 옮길 때, 단순히 svg 그림을 옮기는 방식이 아닌 자동화된 방식이 내장돼 있습니다. 자세한 것은 "도움말"의 5장을 확인하세요.
 
