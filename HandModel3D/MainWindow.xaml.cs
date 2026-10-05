@@ -206,7 +206,7 @@ namespace HandModel3D
                     case "-droptest": _dropTestOnLoad = true; break;
                     case "-savereset": _saveResetTestOnLoad = true; break;
                     case "-defaultstest": _defaultsTestOnLoad = true; break;   // <260811_21>
-                    case "-pincaptest": _pinCapTestOnLoad = true; break;       // <260811_24>
+                    case "-pincaptest": _pinCapTestOnLoad = true; break;       // <260811_23>
                     case "-kbtoggle": _kbToggleTestOnLoad = true; break;
                     case "-vectest": _vecTestOnLoad = true; break;   // <260811_26> 벡터 캡처 777x260 변환 검증
                     case "-bendmore":
@@ -221,7 +221,7 @@ namespace HandModel3D
         private bool _settingsShotOnLoad;   // <260811_21> 잠복 진단(설정 창 '초기값' 영역 확인용)
         private bool _helpTestOnLoad;       // <260811_32> 도움말 창 자가 테스트
         private bool _defaultsTestOnLoad;   // <260811_21>
-        private bool _pinCapTestOnLoad;     // <260811_24>
+        private bool _pinCapTestOnLoad;     // <260811_23>
         private bool _ikTestOnLoad;
         private bool _edgeCapOnLoad;
         private string _poseShotJson, _poseShotPng;   // "-poseshot" 재현 캡처용
@@ -376,7 +376,9 @@ namespace HandModel3D
                             // 검증용: 각 손가락 끝 관절의 위치를 777x260 단위로 함께 남긴다(어느 키를
                             // 짚었는지 그림이 아니라 기하로 확인할 수 있게 — 아랫줄처럼 손끝이 위로
                             // 솟지 않는 포즈도 정확히 판정된다).
-                            log.AppendLine($"OK   {stem}  kb={_keyboard} kbScale={KbScale.ScaleX:F2}  {TipsInKeyboardUnits()}");
+                            // 기계가 읽는 줄(update-hands.ps1 이 정규식으로 파싱)이라 로케일과 무관하게 '.' 소수점으로 쓴다.
+                            log.AppendLine(FormattableString.Invariant(
+                                $"OK   {stem}  kb={_keyboard} kbScale={KbScale.ScaleX:F2}  {TipsInKeyboardUnits()}"));
                             ok++;
                         }
                         catch (Exception ex) { log.AppendLine($"ERR  {stem}: {ex.Message}"); skip++; }
@@ -402,7 +404,7 @@ namespace HandModel3D
                     if (!j.IsTip) continue;
                     var p = _camera.Project(j.Pos);
                     var u = PhysicalPxToKeyboardUnits(new Point(p.X, p.Y));
-                    sb.Append($"{Anatomy.FingerCode(side, j.Digit)}=({u.X:F1},{u.Y:F1}) ");
+                    sb.Append(FormattableString.Invariant($"{Anatomy.FingerCode(side, j.Digit)}=({u.X:F1},{u.Y:F1}) "));
                 }
             }
             return sb.ToString().Trim();
@@ -825,6 +827,14 @@ namespace HandModel3D
                     && Math.Abs(AppSettings.DefOffsetLeftY - (-30)) < 1e-9   // -9999 → 하한 -30
                     && Math.Abs(AppSettings.DefThumbCmcLR - 100) < 1e-9;     // 1e9 → 상한 100
 
+                // 표식(IsDefaultsFile)이 없는 json(아무 객체)은 초기값 파일로 받지 않는다 — 기본값이 true 이던 때는
+                // 키가 하나도 없는 파일이 통과해 모든 값이 최소 범위로 읽혔다. 값도 그대로 남아야 한다.
+                string noMarkPath = System.IO.Path.Combine(dir, "nomark.json");
+                System.IO.File.WriteAllText(noMarkPath, "{\"hello\":1}");
+                double keepScale = AppSettings.DefOverallScale;
+                bool ok4b = !DefaultValues.Load(noMarkPath) && !DefaultValues.IsDefaultsFile(noMarkPath)
+                            && AppSettings.DefOverallScale == keepScale;
+
                 // <260811_21> 두 엄지 좌우 CMC 초기값이 실제 시작 포즈에 들어갔는지 + 그 값에서
                 // 두 손이 충돌하지 않는지(초기값 충돌 문제의 회귀 방지)
                 var def = HandPose.Default();
@@ -881,11 +891,12 @@ namespace HandModel3D
                 sb.AppendLine($"roundtrip={ok2}");
                 sb.AppendLine($"handFileNotDefaults={ok3}");
                 sb.AppendLine($"corruptClamp={ok4}");
+                sb.AppendLine($"noMarkerRejected={ok4b}");
                 sb.AppendLine($"startPoseThumbCmc50={ok5}");
                 sb.AppendLine($"startPoseNoCollision={ok6} finger={startFingerCol} hands={startHandsCol}");
                 sb.AppendLine($"applyImmediate={ok7}");
                 sb.AppendLine($"applyClamp={ok8}");
-                sb.AppendLine("DEFAULTS: " + (ok1 && ok2 && ok3 && ok4 && ok5 && ok6 && ok7 && ok8 ? "PASS" : "FAIL"));
+                sb.AppendLine("DEFAULTS: " + (ok1 && ok2 && ok3 && ok4 && ok4b && ok5 && ok6 && ok7 && ok8 ? "PASS" : "FAIL"));
             }
             catch (Exception ex) { sb.AppendLine("ERR " + ex); }
             try
@@ -1030,7 +1041,7 @@ namespace HandModel3D
             return a > 40 && r > 150 && g < 100 && b < 100;
         }
 
-        // <260811_24> 비트맵 캡처에 활성화된 빨간 고정점이 포함되는지 (-pincaptest). 저장된 PNG 를
+        // <260811_23> 비트맵 캡처에 활성화된 빨간 고정점이 포함되는지 (-pincaptest). 저장된 PNG 를
         // 다시 읽어 픽셀 색으로 판정 — 눈으로 보는 스냅샷과 달리 항상 자동 재검증할 수 있다.
         private void RunPinCapTest()
         {
@@ -1057,7 +1068,7 @@ namespace HandModel3D
                 string pathOn = CaptureBitmapCore(false);
                 bool pinShows = dots.Count == 1 && IsRedPixel(pathOn, targetPx);
 
-                // 벡터(SVG) 캡처는 영향 없어야 한다(<260811_24>는 비트맵 한정).
+                // 벡터(SVG) 캡처는 영향 없어야 한다(<260811_23>은 비트맵 한정).
                 // <260811_29> 크랙 추적으로 <path> 요소가 1개로 묶였으므로 개수 대신 **고정점 있음/없음
                 // 두 캡처의 경로 데이터가 같은지**로 본다 — 검사 의도를 더 곧바로 확인한다.
                 string PathData(string file)
@@ -1517,7 +1528,7 @@ namespace HandModel3D
 
         // ---------- 구성 ----------
 
-        // ---------- 손 회전 (<260719_8-1>): 손별 3축 ±180° ----------
+        // ---------- 손 회전: 손별 3축 ±180° ----------
 
         private readonly Dictionary<string, ValueSlider> _rotSliders = new Dictionary<string, ValueSlider>();
 
@@ -2089,11 +2100,14 @@ namespace HandModel3D
         }
 
         // ---------- 오버레이: 관절 라벨(표시/크기) + 빨간 고정점 + xyz 축 ----------
-        // 오버레이 자체(라벨·축·충돌 경고 등)는 캡처에 포함되지 않는다 (3-10). <260811_24>: 단, 활성화된
+        // 오버레이 자체(라벨·축·충돌 경고 등)는 캡처에 포함되지 않는다 (3-10). <260811_23>: 단, 활성화된
         // 빨간 고정점만은 예외 — ComputeActivePinDotsPx() 로 물리 픽셀 좌표를 따로 계산해 비트맵
         // 캡처에 다시 그려 넣는다(Capture.SaveBitmap 의 pinDots). 벡터(SVG) 캡처는 대상이 아니다.
 
         private readonly HashSet<string> _pins = new HashSet<string>();
+        private const int MaxPins = 64;
+        private static readonly System.Text.RegularExpressions.Regex PinIdPattern =
+            new System.Text.RegularExpressions.Regex(@"^[LR][0-9]\.[A-Z]{2,3}\z");
         public IReadOnlyCollection<string> Pins => _pins;
 
         private void UpdateOverlay()
@@ -2135,7 +2149,7 @@ namespace HandModel3D
                 }
             }
 
-            // 빨간 고정점 (3-3-3-1). 화면 표시는 물리 픽셀 계산(ComputeActivePinDotsPx, <260811_24>
+            // 빨간 고정점 (3-3-3-1). 화면 표시는 물리 픽셀 계산(ComputeActivePinDotsPx, <260811_23>
             // 비트맵 캡처와 공유)을 DIP 로 나눠 그린다 — 화면·캡처가 같은 반지름·불투명도를 쓰게 된다.
             foreach (var (posPx, rPxPhys, opacity) in ComputeActivePinDotsPx())
             {
@@ -2197,7 +2211,7 @@ namespace HandModel3D
         }
 
         /// <summary>
-        /// <260811_24> 활성화된 빨간 고정점을 **물리 픽셀** 좌표(위치·반지름)+불투명도로 계산.
+        /// <260811_23> 활성화된 빨간 고정점을 **물리 픽셀** 좌표(위치·반지름)+불투명도로 계산.
         /// UpdateOverlay(화면, DIP=이 값/DpiScale)와 CaptureBitmapCore(비트맵 캡처, 이 값 그대로)가
         /// 공유한다 — 호출 시점의 _camera 투영 상태를 그대로 쓰므로, 캡처의 확장 렌더처럼 카메라
         /// 크기·팬을 임시로 바꿔 다시 투영한 직후에 불러도 그 상태 기준으로 정확하다.
@@ -2349,6 +2363,21 @@ namespace HandModel3D
 
         private void Graphics_MouseMove(object sender, MouseEventArgs e)
         {
+            // 드래그 도중 창이 포커스를 잃으면(Alt+Tab 등) MouseUp 이 오지 않아, 단추를 뗀 뒤에도 마우스를 움직이는 것만으로
+            // 회전·이동·IK 가 계속된다. 단추가 하나도 안 눌렸는데 드래그 상태가 남아 있으면 그 상태를 정리한다.
+            // (가운데·옆 단추로 끄는 시점 회전도 있으므로 다섯 단추를 모두 본다.)
+            if (e.LeftButton != MouseButtonState.Pressed && e.RightButton != MouseButtonState.Pressed
+                && e.MiddleButton != MouseButtonState.Pressed
+                && e.XButton1 != MouseButtonState.Pressed && e.XButton2 != MouseButtonState.Pressed
+                && (_dragging || _panning || _handDown || _moveDragging || _kbDragging))
+            {
+                bool wasKbDrag = _kbDragging;
+                GraphicsHost.ReleaseMouseCapture();
+                _dragging = _panning = _handDown = _handMoved = _moveDragging = _kbDragging = false;
+                if (wasKbDrag) ScheduleHistorySnapshot();   // MouseUp 이 했을 일(키보드·배경 크기는 저장 상태의 일부)
+                return;
+            }
+
             var p = e.GetPosition(GraphicsHost);
             if (_moveDragging)
             {
@@ -2768,10 +2797,11 @@ namespace HandModel3D
             void End(bool commit)
             {
                 if (box.Visibility != Visibility.Visible) return;
-                // NaN 은 슬라이더 클램프를 통과해 Slider.Value 예외를 일으키므로 거부한다
-                if (commit && double.TryParse(box.Text, System.Globalization.NumberStyles.Any,
+                // NaN·무한대("Infinity"·1e999)는 슬라이더 클램프를 통과해 Slider.Value 예외를 일으키므로 거부한다.
+                // 쉼표(천 단위) 표기는 받지 않는다 — "4,5"가 조용히 45로 읽히는 것을 막는다.
+                if (commit && double.TryParse(box.Text, System.Globalization.NumberStyles.Float,
                                               System.Globalization.CultureInfo.InvariantCulture, out double v)
-                    && !double.IsNaN(v))
+                    && !double.IsNaN(v) && !double.IsInfinity(v))
                     set(v);
                 box.Visibility = Visibility.Collapsed;
                 label.Visibility = Visibility.Visible;
@@ -2928,10 +2958,15 @@ namespace HandModel3D
             try
             {
                 var bmp = new BitmapImage();
-                bmp.BeginInit();
-                bmp.CacheOption = BitmapCacheOption.OnLoad;
-                bmp.UriSource = new Uri(path);
-                bmp.EndInit();
+                // Uri 로 넘기면 경로의 '%20' 같은 글자가 퍼센트 해독돼 다른 파일 이름이 된다("photo%20(1).png" →
+                // "photo (1).png"). 스트림으로 읽어 파일 이름을 있는 그대로 쓴다.
+                using (var fs = System.IO.File.OpenRead(path))
+                {
+                    bmp.BeginInit();
+                    bmp.CacheOption = BitmapCacheOption.OnLoad;
+                    bmp.StreamSource = fs;
+                    bmp.EndInit();
+                }
                 bmp.Freeze();
                 BgImage.Source = bmp;
                 // 그래픽 영역에 맞게 초기 표시 크기(비율 유지) 지정
@@ -3043,7 +3078,7 @@ namespace HandModel3D
             }
 
             if (!includeOutside)
-                // <260811_24>: 지금 _camera 상태(마지막 RenderScene 과 같음)로 고정점을 투영 — _lastBitmap 과 좌표계 일치
+                // <260811_23>: 지금 _camera 상태(마지막 RenderScene 과 같음)로 고정점을 투영 — _lastBitmap 과 좌표계 일치
                 return Capture.SaveBitmap(_lastBitmap, CaptureKeyInfo(), kbVis, kbRect, 96 * s, explicitPath, ComputeActivePinDotsPx());
 
             // 확장 렌더: 같은 투영으로 캔버스만 사방 m 픽셀 넓혀 다시 그린다(키보드 위치도 +m 이동)
@@ -3059,7 +3094,7 @@ namespace HandModel3D
                 _renderer.WorldScale = _scene.OverallScale;
                 var big = _renderer.Render(_camera, _scene.GetRenderMeshes(!_outlineOnly), 96 * s, CurrentOutlineOptions(), BuildBoneSegs());
                 if (!kbRect.IsEmpty) kbRect = new Rect(kbRect.X + m, kbRect.Y + m, kbRect.Width, kbRect.Height);
-                // <260811_24>: Render() 가 방금 cam.Update() 를 이 확장된 크기·팬으로 돌렸으므로,
+                // <260811_23>: Render() 가 방금 cam.Update() 를 이 확장된 크기·팬으로 돌렸으므로,
                 // 지금 투영해야 big 의 좌표계(원본보다 사방 m 만큼 넓음)와 일치한다.
                 return Capture.SaveBitmap(big, CaptureKeyInfo(), kbVis, kbRect, 96 * s, explicitPath, ComputeActivePinDotsPx());
             }
@@ -3231,6 +3266,13 @@ namespace HandModel3D
                 if (DefaultValues.IsDefaultsFile(dlg.FileName))
                 {
                     Status("이 파일은 초기값을 담고 있습니다. 손 모양이 담긴 파일을 불러오세요.", true);
+                    return;
+                }
+                // 끌어다 놓기와 같은 검사: 손 모델 정보가 없는(또는 너무 큰) json 을 열면 장면이 초기화되고, 이어서 '저장'이
+                // 그 엉뚱한 파일을 덮어쓸 수 있다.
+                if (!SceneState.IsStateFile(dlg.FileName))
+                {
+                    Status("손 모델 정보가 없는 JSON 파일입니다: " + System.IO.Path.GetFileName(dlg.FileName), true);
                     return;
                 }
                 try
@@ -3434,18 +3476,28 @@ namespace HandModel3D
                 ? 1 : Math.Max(0.3, Math.Min(3.0, m.KbScaleFactor));
             KbControl.InvalidateVisual();
             _pins.Clear();
-            if (m.Pins != null) foreach (string id in m.Pins) _pins.Add(id);
+            // 고정점 id 는 "L3.TIP"·"R9.PIP" 꼴(손+손가락 번호.관절)뿐이고 손가락 열 개 × 관절 몇 개가 전부다.
+            // 손상·악성 파일의 수십만 개 가짜 id 가 undo 기록·렌더마다 쌓이지 않게 모양과 개수를 제한한다.
+            if (m.Pins != null)
+                foreach (string id in m.Pins)
+                {
+                    if (_pins.Count >= MaxPins) break;
+                    if (id != null && PinIdPattern.IsMatch(id)) _pins.Add(id);
+                }
             _outlineShow = m.OutlineShow; OutlineShow.IsChecked = _outlineShow;
             _outlineOnly = m.OutlineOnly; OutlineOnly.IsChecked = _outlineOnly;
             _outlineOcclude = m.OutlineOcclude; OutlineModeBtn.Content = _outlineOcclude ? "모드: 가림" : "모드: 항상";
-            _outlineThickness = m.OutlineThickness; OutlineThick.Value = _outlineThickness;
+            // 슬라이더 범위(1~8)로 클램프 — 슬라이더가 이미 그 끝에 있으면 ValueChanged 가 없어 값이 그대로 남아,
+            // 엄청나게 큰 값이 윤곽선 칠하기를 사실상 멈추게(또는 0 이하가 잘못된 SVG 두께를) 만들 수 있다.
+            _outlineThickness = double.IsNaN(m.OutlineThickness) ? 2.5 : Math.Max(1, Math.Min(8, m.OutlineThickness));
+            OutlineThick.Value = _outlineThickness;
             if (!string.IsNullOrEmpty(m.OutlineColor)) _outlineColor = (Color)ColorConverter.ConvertFromString(m.OutlineColor);
             _labelsShown = m.LabelsShown;
             // qksqhr(2026-08-11): 손상·악성 저장 파일의 LabelScale 이 WPF FontSize 유효 범위를 벗어나면
             // 렌더마다 예외가 반복되는 상태에 빠진다 — 라벨 크기 팝업 슬라이더와 같은 범위로 클램프.
             _labelScale = double.IsNaN(m.LabelScale) ? 1.0 : Math.Max(0.6, Math.Min(2.2, m.LabelScale));
             PinOpacity.Value = m.PinOpacity;
-            // <260719_8-1> 손 회전
+            // 손 회전
             if (m.RotLeft != null && m.RotLeft.Length == 3)
                 _scene.RotLeft = new HandRotation { RollDeg = m.RotLeft[0], PitchDeg = m.RotLeft[1], SwingDeg = m.RotLeft[2] };
             if (m.RotRight != null && m.RotRight.Length == 3)

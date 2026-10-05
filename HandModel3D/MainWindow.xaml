@@ -118,7 +118,7 @@
                         </StackPanel>
                     </Border>
 
-                    <!-- 손 회전 (<260719_8-1>) -->
+                    <!-- 손 회전 -->
                     <Border Style="{StaticResource GroupBox}">
                         <StackPanel>
                             <DockPanel LastChildFill="False">
@@ -236,7 +236,7 @@
                         </Image.RenderTransform>
                     </Image>
                     <Image x:Name="SceneImage" Stretch="None" HorizontalAlignment="Left" VerticalAlignment="Top"/>
-                    <!-- 라벨·빨간 고정점·xyz축 오버레이. <260811_24>: 비트맵(PNG) 캡처는 예외로
+                    <!-- 라벨·빨간 고정점·xyz축 오버레이. <260811_23>: 비트맵(PNG) 캡처는 예외로
                          활성화된 빨간 고정점만 별도로 다시 그려 포함한다(MainWindow.ComputeActivePinDotsPx
                          + Capture.SaveBitmap 의 pinDots) — 이 Canvas 자체는 여전히 캡처 대상이 아니다. -->
                     <Canvas x:Name="Overlay" IsHitTestVisible="False"/>

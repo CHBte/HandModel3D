@@ -1,5 +1,5 @@
 ﻿<#
-<260811_31-1> 손 모양 갱신 파이프라인 (sample-json → 손 모델 3D → SVG → OpenTypingPlus 손가락 레이어)
+손 모양 갱신 파이프라인 (sample-json → 손 모델 3D → SVG → OpenTypingPlus 손가락 레이어)
 
     ① 추출  : 손 모델 3D 를 -svgexportall 로 한 번 실행해 sample-json 전체를 SVG 로 뽑는다
               (파일마다 열 손가락 끝 좌표를 777x260 단위로 로그에 남긴다).
@@ -62,7 +62,9 @@ function Normalize-Label([string]$s) {
     }
     return $sb.ToString()
 }
-$labelToKey = @{}      # 정규화 라벨 -> "행-열|shift여부"
+# ⚠️ @{} 는 대소문자를 구분하지 않아 'Q' 와 'q' 가 같은 키로 합쳐지고(윗글쇠 표시가 사라진다), 영문 자판 라벨의
+#    윗글쇠 포즈가 기본 포즈로 잘못 골라지거나 Shift 검증이 건너뛰어진다. 라벨은 대소문자 구분 해시표로 둔다.
+$labelToKey = New-Object System.Collections.Hashtable -ArgumentList ([System.StringComparer]::Ordinal)   # 정규화 라벨 -> "행-열|shift여부"
 $keyInfo    = @{}      # "행-열" -> @{ hand; finger }
 foreach ($k in $mj.keys) {
     $id = "" + $k.keyPos[0] + "-" + $k.keyPos[1]
@@ -97,22 +99,31 @@ function Inside($pt, $rect, [double]$pad) {
 # -WriteList 는 상태 json 폴더만 보면 되므로 추출을 건너뛴다(앱 실행 불필요).
 if ($WriteList) { $SkipExport = $true }
 if (-not $SkipExport) {
-    if (-not (Test-Path $Exe)) { throw "손 모델 3D 실행 파일이 없습니다: $Exe" }
+    if (-not (Test-Path -LiteralPath $Exe)) { throw "손 모델 3D 실행 파일이 없습니다: $Exe" }
     Say "① 추출: $Poses → $SvgOut"
-    if (Test-Path $SvgOut) { Remove-Item $SvgOut -Recurse -Force }
-    $p = Start-Process $Exe -ArgumentList "-svgexportall", $Poses, $SvgOut -PassThru
+    if (Test-Path -LiteralPath $SvgOut) {
+        # 이전 추출 산출물(SVG·로그)만 든 폴더일 때만 비운다 — -SvgOut 을 문서 폴더 같은 엉뚱한 곳으로 줘도
+        # 그 안의 다른 파일을 통째로 지우지 않게.
+        $foreign = @(Get-ChildItem -LiteralPath $SvgOut -Force | Where-Object {
+            $_.PSIsContainer -or $_.Name -notmatch '^(_export\.log|_posesources\.txt|.+\.svg|.+\.svg\.err\.txt)$' })
+        if ($foreign.Count -gt 0) { throw "SvgOut 폴더에 추출 산출물이 아닌 것이 있어 비우지 않습니다: $SvgOut (예: $($foreign[0].Name))" }
+        Remove-Item -LiteralPath $SvgOut -Recurse -Force
+    }
+    # ⚠️ Start-Process 는 -ArgumentList 의 각 원소를 따옴표 없이 공백으로 이어 붙인다. 경로에 공백이 있으면
+    #    (예: C:\Users\John Smith\...) 여러 인자로 쪼개져 엉뚱한 폴더에 쓰므로 직접 따옴표로 감싼다.
+    $p = Start-Process $Exe -ArgumentList @('-svgexportall', ('"' + $Poses.TrimEnd('\') + '"'), ('"' + $SvgOut.TrimEnd('\') + '"')) -PassThru
     if (-not $p.WaitForExit(600000)) { throw "추출이 10분 안에 끝나지 않았습니다." }
-    Say ("   SVG {0}개" -f (Get-ChildItem $SvgOut -Filter *.svg).Count)
+    Say ("   SVG {0}개" -f (Get-ChildItem -LiteralPath $SvgOut -Filter *.svg).Count)
 } else {
     Say "① 추출 건너뜀 (기존 $SvgOut 사용)"
 }
 $logPath = Join-Path $SvgOut "_export.log"
-if (-not $WriteList -and -not (Test-Path $logPath)) { throw "추출 로그가 없습니다: $logPath" }
+if (-not $WriteList -and -not (Test-Path -LiteralPath $logPath)) { throw "추출 로그가 없습니다: $logPath" }
 
 # ---------- 로그에서 포즈별 손끝 좌표 읽기 ----------
 $tipsOf = @{}          # stem -> @{ L1=@(x,y); ... }
 $logText = ""
-if (Test-Path $logPath) { $logText = Read-Utf8 $logPath }
+if (Test-Path -LiteralPath $logPath) { $logText = Read-Utf8 $logPath }
 foreach ($line in $logText -split "`r?`n") {
     $m = [regex]::Match($line, '^OK\s+(?<stem>.+?)\s+kb=\S+\s+kbScale=\S+\s+(?<tips>.*)$')
     if (-not $m.Success) { continue }
@@ -127,7 +138,7 @@ Say ("   로그에서 포즈 {0}개 읽음" -f $tipsOf.Count)
 # ---------- ② 확정본 선택 ----------
 $auto = @{}            # "행-열" -> @{ stem; shift }
 $special = @{}         # home / lshift / rshift -> stem
-foreach ($f in (Get-ChildItem $Poses -Filter *.json | Sort-Object Name)) {
+foreach ($f in (Get-ChildItem -LiteralPath $Poses -Filter *.json | Sort-Object Name)) {
     $stem = [System.IO.Path]::GetFileNameWithoutExtension($f.Name)
     if ($stem.StartsWith("기본자세")) { if ($stem -eq "기본자세_확정" -or -not $special.ContainsKey("home")) { $special["home"] = $stem }; continue }
     # 대괄호는 -like 에서 와일드카드라 문자열 비교로 판정한다
@@ -149,7 +160,7 @@ $chosen = @{}
 foreach ($id in $auto.Keys) { $chosen[$id] = $auto[$id].stem }
 foreach ($k in @("home", "lshift", "rshift")) { if ($special.ContainsKey($k)) { $chosen[$k] = $special[$k] } }
 $fromList = 0
-if (Test-Path $List) {
+if (Test-Path -LiteralPath $List) {
     foreach ($line in (Read-Utf8 $List) -split "`r?`n") {
         $t = $line.Trim()
         if ($t -eq "" -or $t.StartsWith("#")) { continue }
@@ -165,7 +176,7 @@ if (Test-Path $List) {
 
 if ($WriteList) {
     $sb = New-Object System.Text.StringBuilder
-    [void]$sb.AppendLine("# <260811_31-1> 확정본 목록 — '행-열' 또는 home/lshift/rshift 다음에 원본 json 이름(확장자 없이)")
+    [void]$sb.AppendLine("# 확정본 목록 — '행-열' 또는 home/lshift/rshift 다음에 원본 json 이름(확장자 없이)")
     [void]$sb.AppendLine("# 이 파일에 적은 것이 자동 선택보다 우선합니다. 줄을 지우면 자동 선택으로 돌아갑니다.")
     foreach ($k in @("home", "lshift", "rshift")) { if ($chosen.ContainsKey($k)) { [void]$sb.AppendLine(("{0,-8} {1}" -f $k, $chosen[$k])) } }
     foreach ($id in ($chosen.Keys | Where-Object { $_ -match '^\d+-\d+$' } | Sort-Object { [int]($_ -split '-')[0] }, { [int]($_ -split '-')[1] })) {
@@ -216,17 +227,21 @@ if ($fails.Count -gt 0 -and -not $Force) { throw "검증 실패로 설치를 중
 
 # ---------- ④ 설치 ----------
 Say "④ 설치: $Hands"
-if (-not (Test-Path $Hands)) { New-Item -ItemType Directory -Path $Hands | Out-Null }
-Get-ChildItem $Hands -Filter *.svg | Remove-Item -Force
+# 바꿔 넣을 SVG 를 먼저 임시 폴더에 전부 모은다. 원본이 하나라도 없으면(예: 기본자세 포즈가 '키보드 꺼짐'으로
+# 건너뛰어져 SVG 가 안 만들어진 경우) 기존 hands 폴더를 지우기 전에 멈춘다 — 안 그러면 옛 그림만 지워진 채
+# '완료'가 찍힌다.
+$stage = Join-Path ([System.IO.Path]::GetTempPath()) ("update-hands-" + [Guid]::NewGuid().ToString("N"))
+New-Item -ItemType Directory -Path $stage | Out-Null
 $manifest = New-Object System.Collections.ArrayList
-[void]$manifest.Add("# <260811_31-1> update-hands.ps1 이 설치한 손 모양 (설치 이름 → 원본 SVG)")
+[void]$manifest.Add("# update-hands.ps1 이 설치한 손 모양 (설치 이름 → 원본 SVG)")
 $installed = 0
+$missing = 0
 function Install-Svg($stem, $hand, $outName) {
     # ⚠️ 원본 이름에 [ ] 가 들어 있다(예: [ㄱ]_…). Test-Path·Copy-Item 은 그것을 와일드카드로
     #    해석하므로 반드시 -LiteralPath 를 써야 한다.
     $src = Join-Path $SvgOut ("{0}-{1}.svg" -f $stem, $hand)
-    if (-not (Test-Path -LiteralPath $src)) { Say "   ! 없음: $src"; return $false }
-    Copy-Item -LiteralPath $src -Destination (Join-Path $Hands $outName) -Force
+    if (-not (Test-Path -LiteralPath $src)) { Say "   ! 없음: $src"; $script:missing++; return $false }
+    Copy-Item -LiteralPath $src -Destination (Join-Path $stage $outName) -Force
     [void]$script:manifest.Add(("{0}`t{1}-{2}.svg" -f $outName, $stem, $hand))
     $script:installed++
     return $true
@@ -241,6 +256,19 @@ foreach ($id in ($chosen.Keys | Where-Object { $_ -match '^\d+-\d+$' } | Sort-Ob
     $info = $keyInfo[$id]
     if ($info -eq $null -or $info.hand -eq $null) { Say "   - $id 건너뜀(담당 손 미정)"; continue }
     [void](Install-Svg $chosen[$id] $info.hand ("{0}-{1}.svg" -f $id, $info.hand))
+}
+if ($missing -gt 0 -and -not $Force) {
+    Remove-Item -LiteralPath $stage -Recurse -Force
+    throw "설치할 SVG 가 $missing 개 없어 기존 손 모양을 그대로 둡니다(-Force 로 강행 가능)."
+}
+try {
+    if (-not (Test-Path -LiteralPath $Hands)) { New-Item -ItemType Directory -Path $Hands | Out-Null }
+    Get-ChildItem -LiteralPath $Hands -Filter *.svg | Remove-Item -Force
+    foreach ($f in (Get-ChildItem -LiteralPath $stage -Filter *.svg)) {
+        Copy-Item -LiteralPath $f.FullName -Destination (Join-Path $Hands $f.Name) -Force
+    }
+} finally {
+    Remove-Item -LiteralPath $stage -Recurse -Force -ErrorAction SilentlyContinue   # 도중에 실패해도 임시 폴더는 남기지 않는다
 }
 Write-Utf8 (Join-Path $Hands "_manifest.txt") (($manifest -join "`r`n") + "`r`n")
 Say "   설치 $installed 개"
@@ -260,15 +288,20 @@ if ($NoDeploy) {
 # ---------- ⑥ 배선 확인: OTP 가 실제로 읽은 파일 이름 대조 ----------
 # 그림을 비교하는 대신, 손가락 레이어가 키마다 어떤 hands\ 파일을 읽었는지 이름만 확인한다
 # (설치 누락·엉뚱한 파일 로드를 값싸게 잡는다. 그림 자체의 정확성은 ③에서 좌표로 이미 봤다).
-$otpExe = Join-Path $root "OpenTypingPlus\build\OpenTypingPlus.exe"
-if ($NoDeploy -or -not (Test-Path $otpExe)) {
+# 실행 파일 이름은 <260830_2-4-3>(3)에서 OpenTypingPlus.exe → 열린타자+.exe 로 바뀌었다.
+$otpExe = Join-Path $root "OpenTypingPlus\build\열린타자+.exe"
+if ($NoDeploy -or -not (Test-Path -LiteralPath $otpExe)) {
     Say "⑥ 배선 확인 생략(배포본 없음)"
 } else {
     Say "⑥ 배선 확인: OTP 가 실제로 읽은 파일 이름 대조"
     $srcTxt = Join-Path $SvgOut "_posesources.txt"
-    & $otpExe -posesources $srcTxt | Out-Null
+    # 열린타자+ 의 개발용 진단 스위치는 환경변수 OTP_DIAG=1 일 때만 동작한다(배포본이 아무 경로에나 파일을
+    # 쓰는 일이 없도록).
+    $env:OTP_DIAG = "1"
+    try { & $otpExe -posesources $srcTxt | Out-Null }
+    finally { Remove-Item Env:OTP_DIAG -ErrorAction SilentlyContinue }
     Start-Sleep -Milliseconds 500
-    if (-not (Test-Path $srcTxt)) { throw "배선 확인 실패: $srcTxt 가 만들어지지 않았습니다." }
+    if (-not (Test-Path -LiteralPath $srcTxt)) { throw "배선 확인 실패: $srcTxt 가 만들어지지 않았습니다." }
 
     $wrong = New-Object System.Collections.ArrayList
     $rows = 0
@@ -286,7 +319,7 @@ if ($NoDeploy -or -not (Test-Path $otpExe)) {
         $isShift = $m.Groups['mode'].Value -eq "shift"
         $info = $keyInfo[$id]
         if ($info -eq $null -or $info.hand -eq $null) {
-            # 담당 손 미정 키(⧵|)는 SetPose 가 기본자세로 돌아간다
+            # 담당 손 미정 키는 SetPose 가 기본자세로 돌아간다(⧵| 는 <261005_5> 로 오른손 R0 에 배정되어 지금은 없다)
             $expL = "home-left.svg"; $expR = "home-right.svg"
         } elseif ($info.hand -eq "left") {
             $expL = "$id-left.svg"

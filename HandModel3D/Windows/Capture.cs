@@ -15,12 +15,12 @@ namespace HandModel3D
     {
         /// <summary>
         /// 비트맵 캡처(PNG). 손(+배경 키보드)만 — 축·라벨·충돌 경고 등 오버레이는 제외. 키보드 없으면
-        /// 투명 배경. <260811_24>: **활성화된 빨간 고정점만은 예외로 포함**한다(pinDots).
+        /// 투명 배경. <260811_23>: **활성화된 빨간 고정점만은 예외로 포함**한다(pinDots).
         /// keyInfo = 눌린 키의 (라벨, "행-열") — 있으면 "[라벨]_시각" + "[행-열]_[라벨]_시각" 으로도 내보낸다.
         /// kbVisual/kbRectPx = 배경 키보드 합성 정보(키보드 표시 중일 때만).
         /// </summary>
         /// <param name="pinDots">
-        /// <260811_24> 활성화된 빨간 고정점(물리 픽셀 중심·반지름·불투명도) — MainWindow.
+        /// <260811_23> 활성화된 빨간 고정점(물리 픽셀 중심·반지름·불투명도) — MainWindow.
         /// ComputeActivePinDotsPx() 가 만든다. 비어 있거나 null 이면 아무것도 안 그린다.
         /// </param>
         /// <param name="explicitPath">
@@ -55,7 +55,7 @@ namespace HandModel3D
                                                      kbRtb.PixelWidth, kbRtb.PixelHeight));
                     }
                     dc.DrawImage(bmp, new Rect(0, 0, bmp.PixelWidth, bmp.PixelHeight));
-                    // <260811_24> 고정점은 손 위(맨 위)에 — 화면에서 Overlay 캔버스가 SceneImage 위에
+                    // <260811_23> 고정점은 손 위(맨 위)에 — 화면에서 Overlay 캔버스가 SceneImage 위에
                     // 있는 것과 같은 순서. 물리 픽셀 좌표라 스케일 변환 없이 그대로 찍는다.
                     if (hasPins)
                         foreach (var (pos, r, opacity) in pinDots)

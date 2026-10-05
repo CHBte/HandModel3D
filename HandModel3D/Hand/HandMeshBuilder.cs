@@ -42,7 +42,7 @@ namespace HandModel3D.Hand
         private static double Sq(double x) => x * x;
 
         /// <summary>
-        /// rotM: 손 전체 회전(<260719_8-1>). 팜 로프트가 +Y 수직 가정으로 만들어지므로,
+        /// rotM: 손 전체 회전. 팜 로프트가 +Y 수직 가정으로 만들어지므로,
         /// 메시는 무회전 좌표(r)로 만들고 마지막에 정점·법선만 회전한다.
         /// fleshResponse: 살 반응 정도 0~1 (<260810_2>) — 뼈가 모이면 살이 매우 약간 볼록해지고
         /// 벌어지면 늘어나며 매우 약간 얇아지는 효과의 강도(0=끔).
@@ -192,7 +192,7 @@ namespace HandModel3D.Hand
                 double fleshMul = 1 + fleshResponse * (0.35 * (1 - spread01) - 0.18 * spread01);
 
                 // 웹 가장자리는 실물에서 오목하게 처진다: 상단을 엄지 MCP보다 살짝 낮게 잡아
-                // 검지 뿌리(높음)→웹(낮음)→엄지로 이어지는 오목 곡선을 만든다 (<260719_8-1>).
+                // 검지 뿌리(높음)→웹(낮음)→엄지로 이어지는 오목 곡선을 만든다.
                 // 엄지가 완전히 굽어 MCP가 CMC 아래로 와도 로프트가 뒤집히지 않게 하한을 둔다.
                 double webBotY = tc.Y - 1.4 * s;   // 팜 폭 안쪽 깊이에서 시작해 계단 없이 흡수
                 double webTopY = Math.Min(idxK.Y - 1.5 * s, tm.Y - 0.1 * s);
@@ -264,7 +264,7 @@ namespace HandModel3D.Hand
                 var start = new Point3D(knuckCX + (k.Pos.X - knuckCX) * 0.55, topY - 2.2 * s,
                                         baseZ + (k.Pos.Z - baseZ) * 0.3);   // 팜 평면(baseZ) 기준 감쇠 (<260810_8>)
                 palm.AddTaperedCylinder(start, k.Pos, k.Radius * 1.25 * v, k.Radius * 1.0 * v, 14);
-                // 너클(주먹뼈) 돌출 (<260719_8-1>): 손허리뼈 머리는 뚜렷하게 튀어나온다.
+                // 너클(주먹뼈) 돌출: 손허리뼈 머리는 뚜렷하게 튀어나온다.
                 // 구를 키우고 손등쪽(+Z)으로 치우쳐 굽혔을 때 옆에서도 보이게 한다.
                 // <260811_1>: 너클은 뼈(손등엔 살이 거의 없음)이므로 살 반응(fingerMul) 대상이 아니다.
                 palm.AddSphere(new Point3D(k.Pos.X, k.Pos.Y, k.Pos.Z + 0.22 * s * v),

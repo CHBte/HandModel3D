@@ -10,7 +10,8 @@ namespace HandModel3D
     /// <summary>그래픽 영역 상태 전체를 담는 직렬화 모델. 저장 파일을 열면 그대로 재현된다 (3-11, 해석 ⓗ).</summary>
     public sealed class StateModel
     {
-        public Dictionary<string, double> Pose { get; set; } = new Dictionary<string, double>();
+        // 기본값은 null — 'Pose' 항목이 없는 json 이 빈 자세(전부 100%)로 읽혀 장면을 초기화하지 않게(Deserialize 가 거부).
+        public Dictionary<string, double> Pose { get; set; }
         public double OverallScale { get; set; } = 1;
         public double Volume { get; set; } = 1;
         public double FleshResponse { get; set; } = 50;   // 살 반응 % (<260810_2>)
@@ -46,7 +47,7 @@ namespace HandModel3D
         public double PinOpacity { get; set; }
         public List<string> Pins { get; set; } = new List<string>();
 
-        // <260719_8-1> 손 회전(도): [세로축, 가로축, 수직축]
+        // 손 회전(도): [세로축, 가로축, 수직축]
         public double[] RotLeft { get; set; } = { 0, 0, 0 };
         public double[] RotRight { get; set; } = { 0, 0, 0 };
         // <260810_3>(5)(6)(7) 손 위치 오프셋: [x, y, z]
@@ -155,8 +156,10 @@ namespace HandModel3D
             // qksqhr(2026-08-11): Set() 경유로 0~100 클램프를 적용 — 손상 파일의 범위 밖 값이
             // 그대로 들어가 슬라이더(클램프 표시)와 모델이 어긋나던 우회로를 막는다.
             foreach (var kv in m.Pose) scene.Pose.Set(kv.Key, kv.Value);
-            scene.OverallScale = m.OverallScale;
-            scene.Volume = m.Volume;
+            // 슬라이더 범위로 클램프(크기 0.5~1.8, 부피 0.6~1.6, 투명도 0~100) — 슬라이더가 이미 그 끝에 있으면
+            // 값이 안 바뀌어 되쓰기 이벤트가 없으므로, 범위 밖 값이 모델에 그대로 남는 우회로를 여기서 막는다.
+            scene.OverallScale = double.IsNaN(m.OverallScale) ? 1.0 : System.Math.Max(0.5, System.Math.Min(1.8, m.OverallScale));
+            scene.Volume = double.IsNaN(m.Volume) ? 1.0 : System.Math.Max(0.6, System.Math.Min(1.6, m.Volume));
             // qksqhr(2026-08-11): 살 반응·물갈퀴도 슬라이더 범위로 클램프 — <260811_11>의 ValueSlider
             // 전환으로 UI 동기화가 모델을 되쓰지 않게 되면서, 손상 파일의 범위 밖 값이 '표시 100/실제
             // 100000' 같은 괴리를 만들 수 있게 됐다(다른 필드들과 같은 원칙).
@@ -164,7 +167,7 @@ namespace HandModel3D
             scene.WebbingHeight = double.IsNaN(m.WebbingHeight) ? 100 : System.Math.Max(0, System.Math.Min(200, m.WebbingHeight));
             // <260811_12> 좌우 비율 — 슬라이더 범위로 클램프(손상 파일 방어, qksqhr 원칙)
             scene.WidthScale = double.IsNaN(m.WidthScale) ? 1.0 : System.Math.Max(0.7, System.Math.Min(1.3, m.WidthScale));
-            scene.Transparency = m.Transparency;
+            scene.Transparency = double.IsNaN(m.Transparency) ? 0 : System.Math.Max(0, System.Math.Min(100, m.Transparency));
             scene.FingerLen.Clear();
             if (m.FingerLen != null)
                 // qksqhr(2026-08-11): 슬라이더 범위(0.6~1.5)로 클램프 — 손상 파일의 범위 밖 값이

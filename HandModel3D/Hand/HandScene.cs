@@ -36,7 +36,7 @@ namespace HandModel3D.Hand
         public Vector3D OffsetLeft = new Vector3D(1, -4.9, 0);
         public Vector3D OffsetRight = new Vector3D(-5.5, -4.9, 0);
 
-        // 손 전체 회전(<260719_8-1>). 축은 처음 실행 때(디폴트 상태) 계산 후 고정.
+        // 손 전체 회전. 축은 처음 실행 때(디폴트 상태) 계산 후 고정.
         public HandRotation RotLeft, RotRight;
         public HandAxes AxesLeft { get; private set; }
         public HandAxes AxesRight { get; private set; }

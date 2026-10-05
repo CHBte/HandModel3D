@@ -11,7 +11,9 @@ namespace HandModel3D
     /// </summary>
     public sealed class DefaultValuesModel
     {
-        public bool IsDefaultsFile { get; set; } = true;
+        // 표식이 없는 json(아무 객체나)은 초기값 파일로 받지 않는다 — 기본값이 true 면 키가 하나도 없는 파일도
+        // 통과해 모든 값이 0 → 최소 범위로 읽힌다. 저장할 때(Save)는 true 로 적는다.
+        public bool IsDefaultsFile { get; set; }
         public double OverallScale { get; set; }
         public double WidthScale { get; set; }
         public double WebbingHeight { get; set; }
@@ -56,6 +58,7 @@ namespace HandModel3D
         {
             var m = new DefaultValuesModel
             {
+                IsDefaultsFile = true,
                 OverallScale = AppSettings.DefOverallScale,
                 WidthScale = AppSettings.DefWidthScale,
                 WebbingHeight = AppSettings.DefWebbingHeight,

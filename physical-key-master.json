@@ -69,7 +69,7 @@
     { "keyPos": [1, 9],  "outputBaseName": "1-9",  "hand": "right", "finger": "R0", "qwerty": { "base": "p", "shift": "P" }, "dubeolsik": { "base": "ㅔ", "shift": "ㅖ" } },
     { "keyPos": [1, 10], "outputBaseName": "1-10", "hand": "right", "finger": "R0", "qwerty": { "base": "[", "shift": "{" }, "dubeolsik": { "base": "[", "shift": "{" } },
     { "keyPos": [1, 11], "outputBaseName": "1-11", "hand": "right", "finger": "R0", "qwerty": { "base": "]", "shift": "}" }, "dubeolsik": { "base": "]", "shift": "}" } },
-    { "keyPos": [1, 12], "outputBaseName": "1-12", "hand": null, "finger": null, "qwerty": { "base": "⧵", "shift": "|" }, "dubeolsik": { "base": "⧵", "shift": "|" } },
+    { "keyPos": [1, 12], "outputBaseName": "1-12", "hand": "right", "finger": "R0", "qwerty": { "base": "⧵", "shift": "|" }, "dubeolsik": { "base": "⧵", "shift": "|" } },
 
     { "keyPos": [2, 0],  "outputBaseName": "2-0",  "hand": "left",  "finger": "L1", "qwerty": { "base": "a", "shift": "A" }, "dubeolsik": { "base": "ㅁ", "shift": "" } },
     { "keyPos": [2, 1],  "outputBaseName": "2-1",  "hand": "left",  "finger": "L2", "qwerty": { "base": "s", "shift": "S" }, "dubeolsik": { "base": "ㄴ", "shift": "" } },

@@ -108,9 +108,10 @@ namespace HandModel3D.Controls
         {
             if (!_editing) return;
             _editing = false;
-            // NaN 은 클램프 비교(<, >)를 모두 통과해 Slider.Value 예외를 일으키므로 거부한다
-            if (commit && double.TryParse(_valEdit.Text, NumberStyles.Any, CultureInfo.InvariantCulture, out double v)
-                && !double.IsNaN(v))
+            // NaN·무한대는 클램프 비교(<, >)를 통과하거나(NaN) 슬라이더 값 검증에서 예외를 내므로(∞) 거부한다.
+            // 쉼표(천 단위)·통화 기호 표기는 받지 않는다("4,5"가 45로 읽히는 것을 막는다).
+            if (commit && double.TryParse(_valEdit.Text, NumberStyles.Float, CultureInfo.InvariantCulture, out double v)
+                && !double.IsNaN(v) && !double.IsInfinity(v))
                 _slider.Value = Clamp(v);   // ValueChanged 발생
             _valEdit.Visibility = Visibility.Collapsed;
             _valText.Visibility = Visibility.Visible;

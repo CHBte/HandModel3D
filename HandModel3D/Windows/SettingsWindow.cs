@@ -37,7 +37,13 @@ namespace HandModel3D
             var json = AddSection(sp, "저장 파일(json) 위치", AppSettings.JsonDir, null, false);
 
             // <260811_21> 세 위치 지정 영역 아래, '초기값' 편집 영역(값들을 나란히 배치).
-            var applyDefaults = AddDefaultsSection(sp);
+            var (applyDefaults, restoreDefaults) = AddDefaultsSection(sp);
+
+            // '저장…'·'불러오기…'는 누르는 즉시 AppSettings 의 초기값을 바꾼다. '확인' 없이 창을 닫으면(제목 표시줄의 X —
+            // 취소 버튼은 없다) 그 값이 메모리에만 남아 손·다음 실행에는 반영되지 않는데, 다음에 창을 열면 칸과 비교
+            // 기준이 같아져 '바뀐 것 없음'으로 영영 반영되지 않는다. 그래서 '확인'이 아닌 닫힘이면 창을 열 때의 값으로 되돌린다.
+            bool okPressed = false;
+            Closing += (s, e) => { if (!okPressed) restoreDefaults(); };
 
             var ok = new Button
             {
@@ -57,6 +63,7 @@ namespace HandModel3D
                 AppSettings.PngManualName = png.manual.IsChecked == true;
                 AppSettings.SvgManualName = svg.manual.IsChecked == true;
                 DefaultsChanged = applyDefaults();
+                okPressed = true;
                 Close();
             };
             sp.Children.Add(ok);
@@ -136,9 +143,10 @@ namespace HandModel3D
         /// <260811_21> '초기값'(크기·좌우·물갈퀴 살·손 위치 X/Y) 편집 영역 — 3개 위치 지정
         /// 영역 아래, 값들을 나란히(가로) 배치. "저장…"은 "초기값_"으로 시작하는 json 파일로
         /// 내보내고, "불러오기…"는 그런 파일을 읽어 칸에 채운다(손 모양 파일을 고르면 거부).
-        /// 반환값은 '확인' 버튼이 호출할 "칸 → AppSettings.Def*" 반영 함수(하나라도 달라지면 true).
+        /// 반환값은 '확인' 버튼이 호출할 "칸 → AppSettings.Def*" 반영 함수(창을 연 뒤 하나라도 달라지면 true)와,
+        /// '확인' 없이 닫힐 때 AppSettings.Def* 를 창을 연 시점의 값으로 되돌리는 함수다.
         /// </summary>
-        private static Func<bool> AddDefaultsSection(Panel parent)
+        private static (Func<bool> apply, Action restore) AddDefaultsSection(Panel parent)
         {
             var inner = new StackPanel();
             inner.Children.Add(new TextBlock
@@ -176,27 +184,32 @@ namespace HandModel3D
             var cmcBox = MakeField("엄지 CMC↔", AppSettings.DefThumbCmcLR);   // <260811_21>
             inner.Children.Add(row);
 
+            // 창을 연 시점의 초기값 8개. '저장…'·'불러오기…'가 AppSettings 를 먼저 바꾸므로, '확인'을 눌렀을 때
+            // 달라졌는지는 칸이 아니라 이 값과 견줘야 한다(안 그러면 불러온 값이 손에 반영·저장되지 않는다).
+            double s0 = AppSettings.DefOverallScale, w0 = AppSettings.DefWidthScale, h0 = AppSettings.DefWebbingHeight;
+            double lx0 = AppSettings.DefOffsetLeftX, ly0 = AppSettings.DefOffsetLeftY;
+            double rx0 = AppSettings.DefOffsetRightX, ry0 = AppSettings.DefOffsetRightY, c0 = AppSettings.DefThumbCmcLR;
+
             // 빈칸·글자 등 잘못된 입력이면 현재 AppSettings 값을 그대로 유지한다(다른 칸과 같은 원칙).
             // 값은 각 슬라이더의 실제 범위로 클램프해 담는다 — 저장 파일·다음에 열었을 때의 칸 표시·
-            // 실제 적용값이 어긋나지 않게(qksqhr 원칙). 반환 = 8개 중 하나라도 달라졌는지.
+            // 실제 적용값이 어긋나지 않게(qksqhr 원칙). 반환 = 창을 연 뒤 8개 중 하나라도 달라졌는지.
             bool ApplyFields()
             {
+                // 쉼표(천 단위)·통화 기호 같은 건 받지 않는다 — "4,5"가 45가 되는 식의 오독을 막는다.
+                // 무한대("Infinity"·1e999)도 거부한다.
                 double P(TextBox b, double cur, double lo, double hi)
-                    => double.TryParse(b.Text, NumberStyles.Any, CultureInfo.InvariantCulture, out var v) && !double.IsNaN(v)
+                    => double.TryParse(b.Text, NumberStyles.Float, CultureInfo.InvariantCulture, out var v)
+                       && !double.IsNaN(v) && !double.IsInfinity(v)
                         ? Math.Max(lo, Math.Min(hi, v)) : cur;
 
-                double s0 = AppSettings.DefOverallScale, w0 = AppSettings.DefWidthScale, h0 = AppSettings.DefWebbingHeight;
-                double lx0 = AppSettings.DefOffsetLeftX, ly0 = AppSettings.DefOffsetLeftY;
-                double rx0 = AppSettings.DefOffsetRightX, ry0 = AppSettings.DefOffsetRightY, c0 = AppSettings.DefThumbCmcLR;
-
-                AppSettings.DefOverallScale = P(scaleBox, s0 * 100, 50, 180) / 100.0;
-                AppSettings.DefWidthScale = P(widthBox, w0 * 100, 70, 130) / 100.0;
-                AppSettings.DefWebbingHeight = P(webBox, h0, 0, 200);
-                AppSettings.DefOffsetLeftX = P(lxBox, lx0, -30, 30);
-                AppSettings.DefOffsetLeftY = P(lyBox, ly0, -30, 30);
-                AppSettings.DefOffsetRightX = P(rxBox, rx0, -30, 30);
-                AppSettings.DefOffsetRightY = P(ryBox, ry0, -30, 30);
-                AppSettings.DefThumbCmcLR = P(cmcBox, c0, 0, 100);
+                AppSettings.DefOverallScale = P(scaleBox, AppSettings.DefOverallScale * 100, 50, 180) / 100.0;
+                AppSettings.DefWidthScale = P(widthBox, AppSettings.DefWidthScale * 100, 70, 130) / 100.0;
+                AppSettings.DefWebbingHeight = P(webBox, AppSettings.DefWebbingHeight, 0, 200);
+                AppSettings.DefOffsetLeftX = P(lxBox, AppSettings.DefOffsetLeftX, -30, 30);
+                AppSettings.DefOffsetLeftY = P(lyBox, AppSettings.DefOffsetLeftY, -30, 30);
+                AppSettings.DefOffsetRightX = P(rxBox, AppSettings.DefOffsetRightX, -30, 30);
+                AppSettings.DefOffsetRightY = P(ryBox, AppSettings.DefOffsetRightY, -30, 30);
+                AppSettings.DefThumbCmcLR = P(cmcBox, AppSettings.DefThumbCmcLR, 0, 100);
 
                 const double Eps = 1e-9;
                 return Math.Abs(AppSettings.DefOverallScale - s0) > Eps
@@ -277,7 +290,15 @@ namespace HandModel3D
                 Margin = new Thickness(0, 0, 0, 10),
                 Child = inner,
             });
-            return ApplyFields;
+            // '확인' 없이 닫힐 때 부르는 되돌리기: AppSettings 초기값을 창을 연 시점(s0..c0)으로.
+            void RestoreOriginal()
+            {
+                AppSettings.DefOverallScale = s0; AppSettings.DefWidthScale = w0; AppSettings.DefWebbingHeight = h0;
+                AppSettings.DefOffsetLeftX = lx0; AppSettings.DefOffsetLeftY = ly0;
+                AppSettings.DefOffsetRightX = rx0; AppSettings.DefOffsetRightY = ry0; AppSettings.DefThumbCmcLR = c0;
+            }
+
+            return (ApplyFields, RestoreOriginal);
         }
     }
 }

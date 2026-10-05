@@ -41,7 +41,7 @@ namespace HandModel3D.Hand
     }
 
     /// <summary>
-    /// 손 전체 회전(<260719_8-1>). 기준은 프로그램 처음 실행 때의 좌표에서 잡은 세 축:
+    /// 손 전체 회전. 기준은 프로그램 처음 실행 때의 좌표에서 잡은 세 축:
     /// 세로축 = 손목 가운데→중지 뿌리(MCP) 직선, 가로축 = 그 중점에서 손바닥 면 안의 수직선,
     /// 수직축 = 손바닥 법선. 회전 중심은 세로축의 중점. 축은 회전해도 초기값에 고정된다.
     /// </summary>
@@ -150,7 +150,7 @@ namespace HandModel3D.Hand
                     j.Pos = new Point3D(wcx + (j.Pos.X - wcx) * widthScale, j.Pos.Y, j.Pos.Z);
             }
 
-            // 손 전체 회전(<260719_8-1>): 초기 기준 축 둘레의 강체 회전을 월드 좌표에 후처리
+            // 손 전체 회전: 초기 기준 축 둘레의 강체 회전을 월드 좌표에 후처리
             if (rotAxes != null && !rot.IsZero)
             {
                 var m = rotAxes.Matrix(rot);
